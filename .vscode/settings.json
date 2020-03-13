@@ -9,6 +9,7 @@
         "unordered_set": "cpp",
         "vector": "cpp",
         "initializer_list": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "system_error": "cpp"
     }
 }

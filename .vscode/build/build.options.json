@@ -1,0 +1,11 @@
+{
+  "additionalFiles": "..,..,..,..,..,..,..,..,..,..,..,..,..,..,..",
+  "builtInLibrariesFolders": "F:\\Arduino\\libraries",
+  "customBuildProperties": "build.path=E:\\Visual Code\\ESP32\\BSYS_V4\\.vscode\\build,build.warn_data_percentage=75,runtime.tools.esptool_py.path=C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esptool_py\\2.6.1,runtime.tools.esptool_py-2.6.1.path=C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esptool_py\\2.6.1,runtime.tools.mkspiffs.path=C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\mkspiffs\\0.2.3,runtime.tools.mkspiffs-0.2.3.path=C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\mkspiffs\\0.2.3,runtime.tools.xtensa-esp32-elf-gcc.path=C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\xtensa-esp32-elf-gcc\\1.22.0-80-g6c4433a-5.2.0,runtime.tools.xtensa-esp32-elf-gcc-1.22.0-80-g6c4433a-5.2.0.path=C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\xtensa-esp32-elf-gcc\\1.22.0-80-g6c4433a-5.2.0",
+  "fqbn": "esp32:esp32:esp32doit-devkit-v1:FlashFreq=80,UploadSpeed=921600,DebugLevel=debug",
+  "hardwareFolders": "F:\\Arduino\\hardware,C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages",
+  "otherLibrariesFolders": "C:\\Users\\Dell-PC\\Documents\\Arduino\\libraries",
+  "runtime.ide.version": "10810",
+  "sketchLocation": "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino",
+  "toolsFolders": "F:\\Arduino\\tools-builder,F:\\Arduino\\hardware\\tools\\avr,C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages"
+}

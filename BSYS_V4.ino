@@ -4,10 +4,6 @@
  Author:	ryan-le-nguyen - Dell-PC
 */
 
-int EthernetInitialTimeout = 0;
-bool EthernetRenew = true;
-bool get_lastcut_ok = false;
-
 #include "Arduino.h"
 #include "esp32-hal-timer.h"
 #include "esp_int_wdt.h"
@@ -17,7 +13,6 @@ bool get_lastcut_ok = false;
 
 uint32_t tick = 0;
 bool Trigger = false;
-int8_t oldPage = -1;
 int CircleSubmitTick = 0;
 bool SubmitNow = false;
 String RecentRFID = "";
@@ -30,6 +25,15 @@ void RootRTCTimer(TimerHandle_t pxTimer)
 {
 	//f_log();
 	CircleSubmitTick++;
+	if (get_last_cut_timeout)
+	{
+		last_cut_timeout_tick++;
+		if (last_cut_timeout_tick >= 5)
+		{
+			last_cut_timeout_tick = 0;
+			get_last_cut_timeout = false;
+		}
+	}
 
 	if (CircleSubmitTick >= 60)
 	{
@@ -96,41 +100,22 @@ void RequestTimer(TimerHandle_t pxTimer)
 	}
 }
 
-void RFID_Runing()
+inline void RFID_Runing()
 {
-	mfrc.PCD_Init();
+	//mfrc.PCD_Init();
 	if (tag_detected())
 	{
 		RecentRFID = read_tagNumber();
 		Output_Alarm();
 
-		switch (BKanban.CurrentPageId)
+		if (BKanban.CurrentPageId == NEW_USER_PAGE)
 		{
-		case LOGIN_PAGE:
-			memccpy(BKanban.Cutting.Worker.UserRFID, RecentRFID.c_str(), 0, sizeof(BKanban.Cutting.Worker.UserRFID));
-			if (BKanban.Cutting.Worker.Pass)
-			{
-				if (BKanban.Cutting.IsCutting)
-				{
-					// stop when the machine is cutting
-					Ethernet_StopCutting();
-				}
-				else
-				{
-					// start
-					Ethernet_StartCutting();
-				}
-			}
-			break;
-
-		case NEW_USER_PAGE:
 			RootNextion.SetPage_stringValue(NEW_USER_PAGE, RootNextion.NewUserHandle.NEW_USER_RFID, RecentRFID.c_str());
-			break;
-
-		default:
+		}
+		else
+		{
 			memccpy(BKanban.Cutting.Worker.UserRFID, RecentRFID.c_str(), 0, sizeof(BKanban.Cutting.Worker.UserRFID));
 			Ethernet_GetWorkerInfo();
-			break;
 		}
 	}
 }
@@ -205,12 +190,14 @@ void Main_Task(void *parameter)
 
 	for (;;)
 	{
-		if (!get_lastcut_ok && RequestQueue.List.empty())
+		if (!get_last_cut_timeout && !get_lastcut_ok && RequestQueue.List.empty())
 		{
 			Ethernet_GetLastCut();
+			last_cut_timeout_tick = 0;
+			get_last_cut_timeout = true;
 		}
 
-		if(BKanban.Cutting.Continue && !BKanban.Cutting.IsCutting && RequestQueue.List.empty() && !Flag.IsRequest)
+		if (BKanban.Cutting.Continue && !BKanban.Cutting.IsCutting && RequestQueue.List.empty() && !Flag.IsRequest)
 		{
 			ButContinueClickCallback();
 		}
@@ -245,11 +232,11 @@ void Main_Task(void *parameter)
 				RootEthernet.Renew();
 		}
 
-			if (EthernetInitialTimeout >= 10)
-			{
-				RootEthernet.Renew();
-				EthernetInitialTimeout=0;
-			}
+		if (EthernetInitialTimeout >= 10)
+		{
+			RootEthernet.Renew();
+			EthernetInitialTimeout = 0;
+		}
 		// 1 second trigger
 		if (Trigger)
 		{
@@ -296,50 +283,38 @@ void Main_Task(void *parameter)
 			{
 			case HIS_PAGE:
 				BKanban.CurrentWindowId = BKanban.CurrentPageId;
-				if (BKanban.CurrentPageId != oldPage)
-				{
-					//Ethernet_GetLastCut();
-					oldPage = HIS_PAGE;
-				}
+				Nextion_UpdateHisPage();
 				break;
 			case SEARCH_PAGE:
-				oldPage = -1;
 				Nextion_UpdateSearchPage();
 				BKanban.CurrentWindowId = BKanban.CurrentPageId;
 				break;
 
 			case INFO_PAGE:
-				oldPage = -1;
 				BKanban.CurrentWindowId = BKanban.CurrentPageId;
 				Nextion_UpdateInfoPage();
 				break;
 
 			case CUTTING_PAGE:
-				oldPage = -1;
 				BKanban.CurrentWindowId = BKanban.CurrentPageId;
 				Nextion_UpdateCuttingPage();
 				break;
 
 			case CONFIRM_SIZE_PAGE:
-				oldPage = -1;
 				break;
 
 			case COMPONENT_PAGE:
-				oldPage = -1;
 				Nextion_UpdateComponentPage();
 				break;
 
 			case MACHINE_PAGE:
-				oldPage = -1;
 				Nextion_UpdateMachinePage();
 				break;
 
 			case NEW_USER_PAGE:
-				oldPage = -1;
 				break;
 
 			case LOGIN_PAGE:
-				oldPage = -1;
 				Nextion_UpdateUserPage();
 				break;
 

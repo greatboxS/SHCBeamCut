@@ -4,7 +4,11 @@
             "name": "Win32",
             "includePath": [
                 "C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\**",
-                "C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.4\\**"
+                "C:\\Users\\Dell-PC\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.4\\**",
+                "F:\\Arduino\\hardware\\tools\\**",
+                "F:\\Arduino\\libraries\\**",
+                "C:\\Users\\Dell-PC\\Documents\\Arduino\\hardware\\tools\\**",
+                "C:\\Users\\Dell-PC\\Documents\\Arduino\\libraries\\**"
             ],
             "forcedInclude": [],
             "intelliSenseMode": "msvc-x64"
