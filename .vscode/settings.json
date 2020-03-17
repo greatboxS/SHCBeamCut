@@ -10,6 +10,7 @@
         "vector": "cpp",
         "initializer_list": "cpp",
         "cstring": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "queue": "cpp"
     }
 }

@@ -6,7 +6,7 @@
 #include "EthernetConfig.h"
 #include "LocalBackup.h"
 #include <SPI.h>
-#include "MFRC522.h"
+#include <MFRC522.h>
 #include <Ethernet.h>
 #include <esp_task_wdt.h>
 #include <esp_int_wdt.h>
@@ -169,7 +169,7 @@ void SysStartup()
 {
 	RootNextion_Init();
 	IO_Init();
-
+	SPI.begin();
 	mfrc.PCD_Init();				// Init MFRC522
 	delay(4);						// Optional delay. Some board do need more time after init to be ready, see Readme
 	mfrc.PCD_DumpVersionToSerial(); // Show details of PCD - MFRC522 Card Reader details
@@ -182,22 +182,14 @@ void SysStartup()
 void ExternalInterrupt()
 {
 	f_log();
-	if (millis() - oldTick > 1500)
+	if (millis() - oldTick > 2000)
 	{
 		oldTick = millis();
-		delay(200);
-		if (digitalRead(EXTERNAL_INTERRUPT_PIN) == LOW)
+		if (digitalRead(EXTERNAL_INTERRUPT_PIN) == HIGH)
 			return;
 
 		log_ln("Detected new cut time");
 		BKanban.Cutting.TotalCutTimes++;
-		RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.TOTAL_TIME, BKanban.Cutting.TotalCutTimes);
-		if (BKanban.Cutting.IsCutting)
-		{
-			BKanban.Cutting.CurrentCutTimes++;
-			RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.CUTTING_TIME, BKanban.Cutting.CurrentCutTimes);
-		}
-
 		BKanban.Cutting.SubmitCutTime++;
 	}
 }
@@ -283,10 +275,14 @@ void IO_Init()
 	digitalWrite(LED_BUILTIN, HIGH);
 	pinMode(ALARM_PIN, OUTPUT);
 	digitalWrite(ALARM_PIN, HIGH);
+	pinMode(ETHERNET_RST_PIN, OUTPUT);
+	digitalWrite(ETHERNET_RST_PIN, HIGH);
+	pinMode(ETHERNET_SPI_CS_PIN, OUTPUT);
+	digitalWrite(ETHERNET_SPI_CS_PIN, HIGH);
 
-	touchAttachInterrupt(TOUCH_BUTTON, TouchButton_Callback, 40);
+	//touchAttachInterrupt(TOUCH_BUTTON, TouchButton_Callback, 40);
 	pinMode(EXTERNAL_INTERRUPT_PIN, INPUT);
-	attachInterrupt(EXTERNAL_INTERRUPT_PIN, ExternalInterrupt, RISING);
+	attachInterrupt(EXTERNAL_INTERRUPT_PIN, ExternalInterrupt, FALLING);
 	delay(1000);
 
 	int timeout = 60000 * 10;
@@ -326,6 +322,7 @@ void Ethernet_Init()
 	while (RootEthernet.begin() == 0)
 	{
 		delay(100);
+		RootNextion.Listening();
 	}
 
 	RootNextion.Waiting(20000, "Connecting to server...");
@@ -551,6 +548,7 @@ void DataReceiveCallBack(EthernetClient &stream)
 				if (AddNewUser)
 				{
 					RootNextion.showMessage("Add new user success", 2000);
+					AddNewUser=false;
 				}
 				else
 					RootNextion.GotoPage(LOGIN_PAGE);

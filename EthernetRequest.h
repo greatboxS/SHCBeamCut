@@ -332,7 +332,7 @@ void SendRequest(char *url, bool showWaitingPage)
 		RequestQueue.List.push(request);
 }
 
-void Ethernet_RequestQueue()
+inline void Ethernet_RequestQueue()
 {
 	//f_log();
 	if (!RequestQueue.List.empty())
@@ -359,23 +359,27 @@ void Ethernet_RequestQueue()
 			RootEthernet.client.connect(RootEthernet.server, RootEthernet.port);
 
 		int i = 0;
-		while (RootEthernet.client.connected() == 0 && i < 300)
+		while (i < 10)
 		{
+			if (RootEthernet.client.connected())
+				break;
 			i++;
-			delay(10);
+			delay(100);
 			log_ln(i);
 			RootNextion.Listening();
 		}
 
 		if (!RootEthernet.client.connected())
 		{
-			RequestQueue.retry_failed();
-			EthernetInitialTimeout++;
-			RootNextion.showMessage("Can not connect to server");
+			RequestQueue.List.front().retry++;
+			if (RequestQueue.List.front().retry >= 5)
+			{
+				RequestQueue.List.pop();
+				RootNextion.showMessage("Can not connect to server", 1000);
+				EthernetInitialTimeout = 1;
+			}
 			return;
 		}
-
-		EthernetInitialTimeout = 0;
 
 		log("RootEthernet.client.connected() = ");
 		log_ln(RootEthernet.client.connected());
@@ -393,7 +397,7 @@ void Ethernet_RequestQueue()
 			RootNextion.Waiting(10000, "Requesting to server...");
 
 		RequestQueue.List.pop();
-
+		EthernetInitialTimeout = 0;
 		Flag.IsRequest = true;
 		Flag.RespError = false;
 	}

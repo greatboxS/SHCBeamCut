@@ -20,19 +20,20 @@ String RecentRFID = "";
 
 void Main_Task(void *parameter);
 void Nextion_Task(void *parameter);
+void UpdateTimeTask(void *parameter);
 
 // 1 Sec Timer
-#line 24 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+#line 25 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
 void RootRTCTimer(TimerHandle_t pxTimer);
-#line 94 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+#line 95 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
 void RequestTimer(TimerHandle_t pxTimer);
-#line 103 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+#line 104 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
 void RFID_Runing();
 #line 124 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
 void setup();
-#line 182 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+#line 186 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
 void loop();
-#line 24 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+#line 25 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
 void RootRTCTimer(TimerHandle_t pxTimer)
 {
 	//f_log();
@@ -114,7 +115,6 @@ void RequestTimer(TimerHandle_t pxTimer)
 
 inline void RFID_Runing()
 {
-	//mfrc.PCD_Init();
 	if (tag_detected())
 	{
 		RecentRFID = read_tagNumber();
@@ -142,6 +142,10 @@ void setup()
 		;
 
 	BaseType_t error;
+
+	error = xTaskCreatePinnedToCore(UpdateTimeTask, "UpdateTimeTask", 1024 * 10, NULL, 2, NULL, 0);
+
+	Serial.println(error);
 
 	error = xTaskCreatePinnedToCore(Main_Task, "Main_Task", 1024 * 100, NULL, 1, NULL, 1);
 
@@ -199,7 +203,7 @@ void loop()
 
 void Main_Task(void *parameter)
 {
-
+	bool submit_counter = false;
 	for (;;)
 	{
 		if (!get_last_cut_timeout && !get_lastcut_ok && RequestQueue.List.empty())
@@ -212,6 +216,12 @@ void Main_Task(void *parameter)
 		if (BKanban.Cutting.Continue && !BKanban.Cutting.IsCutting && RequestQueue.List.empty() && !Flag.IsRequest)
 		{
 			ButContinueClickCallback();
+		}
+
+		if (get_lastcut_ok && !submit_counter && !Flag.IsRequest)
+		{
+			Ethernet_SubmitCuttingTime();
+			submit_counter=true;
 		}
 
 		RFID_Runing();
@@ -231,9 +241,9 @@ void Main_Task(void *parameter)
 		//reset ethernet module every 30 min
 		if (tick >= 1800)
 		{
+			mfrc.PCD_Init();
 			tick = 0;
 			int maintain_status = Ethernet.maintain();
-
 			// #define DHCP_CHECK_NONE         (0)
 			// #define DHCP_CHECK_RENEW_FAIL   (1)
 			// #define DHCP_CHECK_RENEW_OK     (2)
@@ -244,34 +254,33 @@ void Main_Task(void *parameter)
 				RootEthernet.Renew();
 		}
 
-		if (EthernetInitialTimeout >= 10)
-		{
-			RootEthernet.Renew();
-			EthernetInitialTimeout = 0;
-		}
 		// 1 second trigger
 		if (Trigger)
 		{
 			Trigger = false;
 			BKanban.EthernetState = RootEthernet.Get_LANStatus();
-			IPAddress ip = Ethernet.localIP();
-			if (ip[0] == 0)
-				EthernetStatus = false;
+			// IPAddress ip = Ethernet.localIP();
+			// if (ip[0] == 0)
+			// 	EthernetStatus = false;
 
 			if (BKanban.EthernetState == LinkON)
 			{
 				if (!RootEthernet.EthernetPlugIn)
 				{
 					//new cable plugin
-					RootNextion.GotoPage(WAITING_PAGE);
-					RootNextion.setNumberProperty(RootNextion.PageName[WAITING_PAGE], "tm0.tim", 60000);
-					RootEthernet.begin();
+					//RootNextion.GotoPage(WAITING_PAGE);
+					//RootNextion.setNumberProperty(RootNextion.PageName[WAITING_PAGE], "tm0.tim", 60000);
+					if (RootEthernet.have_old_ip)
+						RootEthernet.reinitialize_ethernet_module();
+					else
+						RootEthernet.begin();
+
 					RootEthernet.EthernetPlugIn = true;
 
-					if (BKanban.Cutting.IsCutting)
-						RootNextion.GotoPage(CUTTING_PAGE);
-					else
-						RootNextion.GotoPage(BKanban.CurrentWindowId);
+					// if (BKanban.Cutting.IsCutting)
+					// 	RootNextion.GotoPage(CUTTING_PAGE);
+					// else
+					// 	RootNextion.GotoPage(BKanban.CurrentWindowId);
 				}
 			}
 
@@ -338,13 +347,43 @@ void Main_Task(void *parameter)
 	}
 }
 
+void UpdateTimeTask(void *parameter)
+{
+	int tick = 0;
+	int old_cutTime_val = 0;
+	for (;;)
+	{
+		if (millis() - tick > 1000)
+		{
+			tick = millis();
+			Nextion_UpdateTime();
+		}
+
+		if (old_cutTime_val != BKanban.Cutting.TotalCutTimes)
+		{
+			RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.TOTAL_TIME, BKanban.Cutting.TotalCutTimes);
+			if (BKanban.Cutting.IsCutting)
+			{
+				BKanban.Cutting.CurrentCutTimes++;
+				RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.CUTTING_TIME, BKanban.Cutting.CurrentCutTimes);
+			}
+			old_cutTime_val = BKanban.Cutting.TotalCutTimes;
+		}
+
+		vTaskDelay(10);
+	}
+}
+
 void Nextion_Task(void *parameter)
 {
 	for (;;)
 	{
-		//f_log();
-		Nextion_UpdateTime();
-		vTaskDelay(1000);
+		if (EthernetInitialTimeout == 1)
+		{
+			RootEthernet.Renew();
+			EthernetInitialTimeout = 0;
+		}
+		vTaskDelay(10);
 	}
 }
 

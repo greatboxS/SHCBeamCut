@@ -5,7 +5,9 @@
 #include "SPI.h"
 #include <cstdint>
 #include "EthernetClient.h"
+#include <EEPROM.h>
 
+#define LOCAL_IP_ADDRESS 400
 // Initialize the ethernet SPI interface
 // CS_PIN
 typedef enum HttpMethod_t
@@ -27,13 +29,13 @@ private:
 	String Url = "";
 	char Host[32] = "Host: 10.4.3.41:32765";
 	//const char *Connection = "Connection: close";
-	const char* Connection = "Connection: Keep-Alive";
+	const char *Connection = "Connection: Keep-Alive";
 	const char *KeepAlive = "Keep-Alive: timeout=5, max=999";
 	const char *ConnectionClose = "Connection: close";
-    const char *ConnectionAlive = "Connection: keep-alive";
-    //const char *CashControl = "Cache-Control: max-age=0";
-    //const char *UpgradeInsecure = "Upgrade-Insecure-Requests: 1";
-    //const char *UserAgent = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36";
+	const char *ConnectionAlive = "Connection: keep-alive";
+	//const char *CashControl = "Cache-Control: max-age=0";
+	//const char *UpgradeInsecure = "Upgrade-Insecure-Requests: 1";
+	//const char *UserAgent = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36";
 	//byte mac[6] = { 0x6A, 0x72, 0x19, 0x9B, 0x7F, 0xC6 };
 	//byte mac[6] = { 0xF3, 0xEF, 0x90, 0xF7, 0xDD, 0x24 };
 	//byte mac[6] = { 0x6C, 0xB1, 0xBD, 0x4F, 0x6C, 0xCC };
@@ -56,8 +58,11 @@ public:
 	char server[20] = "10.4.3.41";
 	int port = 32765;
 	bool EthernetPlugIn = false;
-	
+	bool have_old_ip = false;
+
 	byte mac[6] = {0xF6, 0x6C, 0x08, 0x62, 0x05, 0x06};
+
+	IPAddress local_ip, gateway_ip, dns_ip, subnet_ip;
 
 	EthernetClient client;
 
@@ -71,6 +76,14 @@ public:
 		return begin();
 	}
 
+	void reinitialize_ethernet_module()
+	{
+		Ethernet.init(CSPin);
+		printf("ReInitialize Ethernet module with static ip\r\n");
+		Ethernet.begin(mac, local_ip, dns_ip, gateway_ip, subnet_ip);
+		lanConntected = true;
+	}
+
 	uint8_t begin()
 	{
 		Ethernet.init(CSPin);
@@ -82,7 +95,7 @@ public:
 			Serial.println(Ethernet.localIP()[i], HEX);
 		}
 
-		int exception = Ethernet.begin(mac);
+		int exception = Ethernet.begin(mac, 20000);
 
 		if (exception == 0)
 		{
@@ -94,7 +107,7 @@ public:
 				Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
 				EthernetPlugIn = false;
 			}
-			if (Ethernet.linkStatus() == LinkOFF)
+			else if (Ethernet.linkStatus() == LinkOFF)
 			{
 				Serial.println("Ethernet cable is not connected.");
 				EthernetPlugIn = false;
@@ -104,6 +117,8 @@ public:
 		{
 			Serial.print("  DHCP assigned IP ");
 			Serial.println(Ethernet.localIP());
+			have_old_ip=true;
+			EEPROM_SAVE_ETHERNET_IP4();
 			lanConntected = true;
 			EthernetPlugIn = true;
 		}
@@ -150,9 +165,9 @@ public:
 		client.println(Url);
 		client.println(Host);
 		client.println(ConnectionAlive);
-        //client.println(CashControl);
-        //client.println(UpgradeInsecure);
-        //client.println(UserAgent);
+		//client.println(CashControl);
+		//client.println(UpgradeInsecure);
+		//client.println(UserAgent);
 		client.println("Content-Type: application/json");
 		client.println(temp);
 		client.println();
@@ -170,6 +185,65 @@ public:
 	// 0 = hardware not found
 	// 2 = cable not connected
 	uint8_t Get_LANStatus();
+
+	void EEPROM_SAVE_ETHERNET_IP4()
+	{
+		printf("Save ethernet ip\r\n");
+		local_ip = Ethernet.localIP();
+		gateway_ip = Ethernet.gatewayIP();
+		dns_ip = Ethernet.dnsServerIP();
+		subnet_ip = Ethernet.subnetMask();
+
+		printf("Local Ip: %s, Gateway Ip: %s, DNS: %s, Subnet: %s\r\n",
+			   local_ip.toString().c_str(), gateway_ip.toString().c_str(), dns_ip.toString().c_str(), subnet_ip.toString().c_str());
+
+		EEPROM.begin(1024);
+		//save local ip
+		EEPROM_SAVE_IP4(local_ip, LOCAL_IP_ADDRESS);
+		//save local ip
+		EEPROM_SAVE_IP4(gateway_ip, LOCAL_IP_ADDRESS + 4);
+		//save local ip
+		EEPROM_SAVE_IP4(dns_ip, LOCAL_IP_ADDRESS + 8);
+		//save local ip
+		EEPROM_SAVE_IP4(subnet_ip, LOCAL_IP_ADDRESS + 12);
+		EEPROM.end();
+	}
+
+	void EEPROM_READ_ETHERNET_IP4()
+	{
+		printf("Read ethernet ip\r\n");
+		EEPROM.begin(1024);
+		//save local ip
+		EEPROM_READ_IP4(local_ip, LOCAL_IP_ADDRESS);
+		//save local ip
+		EEPROM_READ_IP4(gateway_ip, LOCAL_IP_ADDRESS + 4);
+		//save local ip
+		EEPROM_READ_IP4(dns_ip, LOCAL_IP_ADDRESS + 8);
+		//save local ip
+		EEPROM_READ_IP4(subnet_ip, LOCAL_IP_ADDRESS + 12);
+		EEPROM.end();
+
+		printf("Local Ip: %s, Gateway Ip: %s, DNS: %s, Subnet: %s\r\n",
+			   local_ip.toString().c_str(), gateway_ip.toString().c_str(), dns_ip.toString().c_str(), subnet_ip.toString().c_str());
+	}
+
+	void EEPROM_SAVE_IP4(IPAddress &ip, int address)
+	{
+		printf("Save Ip4: %s\r\n", ip.toString().c_str());
+		for (size_t i = 0; i < 4; i++)
+		{
+			EEPROM.write(address + i, ip[i]);
+		}
+	}
+
+	void EEPROM_READ_IP4(IPAddress &ip, int address)
+	{
+		for (size_t i = 0; i < 4; i++)
+		{
+			ip[i] = EEPROM.read(address + i);
+		}
+		printf("Read Ip4: %s\r\n", ip.toString().c_str());
+	}
 
 	void Reset()
 	{

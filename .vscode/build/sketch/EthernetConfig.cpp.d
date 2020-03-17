@@ -135,4 +135,5 @@ E:\Visual\ Code\ESP32\BSYS_V4\.vscode\build\sketch\EthernetConfig.cpp.o: \
  C:\Users\Dell-PC\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\libraries\SPI\src/SPI.h \
  C:\Users\Dell-PC\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\cores\esp32/esp32-hal-spi.h \
  F:\Arduino\libraries\Ethernet\src/EthernetClient.h \
- F:\Arduino\libraries\Ethernet\src/Ethernet.h
+ F:\Arduino\libraries\Ethernet\src/Ethernet.h \
+ C:\Users\Dell-PC\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\libraries\EEPROM\src/EEPROM.h

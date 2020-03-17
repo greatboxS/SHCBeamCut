@@ -24,6 +24,7 @@ String RecentRFID = "";
 
 void Main_Task(void *parameter);
 void Nextion_Task(void *parameter);
+void UpdateTimeTask(void *parameter);
 
 // 1 Sec Timer
 void RootRTCTimer(TimerHandle_t pxTimer)
@@ -107,7 +108,6 @@ void RequestTimer(TimerHandle_t pxTimer)
 
 inline void RFID_Runing()
 {
- //mfrc.PCD_Init();
  if (tag_detected())
  {
   RecentRFID = read_tagNumber();
@@ -136,26 +136,38 @@ void setup()
 
  BaseType_t error;
 
- error = xTaskCreatePinnedToCore(Main_Task, "Main_Task", 1024 * 100, 
-# 134 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
-                                                                    __null
-# 134 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
-                                                                        , 1, 
+ error = xTaskCreatePinnedToCore(UpdateTimeTask, "UpdateTimeTask", 1024 * 10, 
 # 134 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
                                                                              __null
 # 134 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+                                                                                 , 2, 
+# 134 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+                                                                                      __null
+# 134 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+                                                                                          , 0);
+
+ Serial.println(error);
+
+ error = xTaskCreatePinnedToCore(Main_Task, "Main_Task", 1024 * 100, 
+# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+                                                                    __null
+# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+                                                                        , 1, 
+# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+                                                                             __null
+# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                                                                                  , 1);
 
  Serial.println(error);
 
  error = xTaskCreatePinnedToCore(Nextion_Task, "Nextion_Task", 1024 * 50, 
-# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 142 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
                                                                          __null
-# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 142 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                                                                              , 2, 
-# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 142 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
                                                                                   __null
-# 138 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 142 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                                                                                       , 0);
 
  Serial.println(error);
@@ -164,23 +176,23 @@ void setup()
              (1000), // The timer period in ticks.
              ( ( BaseType_t ) 1 ), // The timers will auto-reload themselves when they expire.
              
-# 145 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 149 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
             __null
-# 145 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 149 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                 , // Assign each timer a unique id equal to its array index.
              RootRTCTimer // Each timer calls the same callback when it expires.
  );
 
  TimerHandle_t requestTimer = xTimerCreate("RequestTimer", (5000), ( ( BaseType_t ) 1 ), 
-# 149 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 153 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
                                                                           __null
-# 149 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 153 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                                                                               , RequestTimer);
 
  if (rootTimer == 
-# 151 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 155 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
                  __null
-# 151 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 155 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                      )
  {
  }
@@ -190,9 +202,9 @@ void setup()
   // it would be ignored because the scheduler has not yet been
   // started.
   if (xTimerGenericCommand( ( rootTimer ), ( ( BaseType_t ) 1 ), ( xTaskGetTickCount() ), 
-# 159 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 163 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
      __null
-# 159 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 163 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
      , ( 0 ) ) != ( ( ( BaseType_t ) 1 ) ))
   {
    Serial.println("Can not start root timer");
@@ -202,18 +214,18 @@ void setup()
  }
 
  if (requestTimer == 
-# 167 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 171 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
                     __null
-# 167 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 171 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                         )
  {
  }
  else
  {
   if (xTimerGenericCommand( ( requestTimer ), ( ( BaseType_t ) 1 ), ( xTaskGetTickCount() ), 
-# 172 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 176 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
      __null
-# 172 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 176 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
      , ( 0 ) ) != ( ( ( BaseType_t ) 1 ) ))
   {
    Serial.println("Can not start request timer");
@@ -228,15 +240,15 @@ void loop()
 {
  // all the things are done in tasks
  vTaskSuspend(
-# 185 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
+# 189 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino" 3 4
              __null
-# 185 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
+# 189 "e:\\Visual Code\\ESP32\\BSYS_V4\\BSYS_V4.ino"
                  );
 }
 
 void Main_Task(void *parameter)
 {
-
+ bool submit_counter = false;
  for (;;)
  {
   if (!get_last_cut_timeout && !get_lastcut_ok && RequestQueue.List.empty())
@@ -249,6 +261,12 @@ void Main_Task(void *parameter)
   if (BKanban.Cutting.Continue && !BKanban.Cutting.IsCutting && RequestQueue.List.empty() && !Flag.IsRequest)
   {
    ButContinueClickCallback();
+  }
+
+  if (get_lastcut_ok && !submit_counter && !Flag.IsRequest)
+  {
+   Ethernet_SubmitCuttingTime();
+   submit_counter=true;
   }
 
   RFID_Runing();
@@ -268,9 +286,9 @@ void Main_Task(void *parameter)
   //reset ethernet module every 30 min
   if (tick >= 1800)
   {
+   mfrc.PCD_Init();
    tick = 0;
    int maintain_status = Ethernet.maintain();
-
    // #define DHCP_CHECK_NONE         (0)
    // #define DHCP_CHECK_RENEW_FAIL   (1)
    // #define DHCP_CHECK_RENEW_OK     (2)
@@ -281,34 +299,33 @@ void Main_Task(void *parameter)
     RootEthernet.Renew();
   }
 
-  if (EthernetInitialTimeout >= 10)
-  {
-   RootEthernet.Renew();
-   EthernetInitialTimeout = 0;
-  }
   // 1 second trigger
   if (Trigger)
   {
    Trigger = false;
    BKanban.EthernetState = RootEthernet.Get_LANStatus();
-   IPAddress ip = Ethernet.localIP();
-   if (ip[0] == 0)
-    EthernetStatus = false;
+   // IPAddress ip = Ethernet.localIP();
+   // if (ip[0] == 0)
+   // 	EthernetStatus = false;
 
    if (BKanban.EthernetState == LinkON)
    {
     if (!RootEthernet.EthernetPlugIn)
     {
      //new cable plugin
-     RootNextion.GotoPage(WAITING_PAGE);
-     RootNextion.setNumberProperty(RootNextion.PageName[WAITING_PAGE], "tm0.tim", 60000);
-     RootEthernet.begin();
+     //RootNextion.GotoPage(WAITING_PAGE);
+     //RootNextion.setNumberProperty(RootNextion.PageName[WAITING_PAGE], "tm0.tim", 60000);
+     if (RootEthernet.have_old_ip)
+      RootEthernet.reinitialize_ethernet_module();
+     else
+      RootEthernet.begin();
+
      RootEthernet.EthernetPlugIn = true;
 
-     if (BKanban.Cutting.IsCutting)
-      RootNextion.GotoPage(CUTTING_PAGE);
-     else
-      RootNextion.GotoPage(BKanban.CurrentWindowId);
+     // if (BKanban.Cutting.IsCutting)
+     // 	RootNextion.GotoPage(CUTTING_PAGE);
+     // else
+     // 	RootNextion.GotoPage(BKanban.CurrentWindowId);
     }
    }
 
@@ -375,12 +392,42 @@ void Main_Task(void *parameter)
  }
 }
 
+void UpdateTimeTask(void *parameter)
+{
+ int tick = 0;
+ int old_cutTime_val = 0;
+ for (;;)
+ {
+  if (millis() - tick > 1000)
+  {
+   tick = millis();
+   Nextion_UpdateTime();
+  }
+
+  if (old_cutTime_val != BKanban.Cutting.TotalCutTimes)
+  {
+   RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.TOTAL_TIME, BKanban.Cutting.TotalCutTimes);
+   if (BKanban.Cutting.IsCutting)
+   {
+    BKanban.Cutting.CurrentCutTimes++;
+    RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.CUTTING_TIME, BKanban.Cutting.CurrentCutTimes);
+   }
+   old_cutTime_val = BKanban.Cutting.TotalCutTimes;
+  }
+
+  vTaskDelay(10);
+ }
+}
+
 void Nextion_Task(void *parameter)
 {
  for (;;)
  {
-  //f_log();
-  Nextion_UpdateTime();
-  vTaskDelay(1000);
+  if (EthernetInitialTimeout == 1)
+  {
+   RootEthernet.Renew();
+   EthernetInitialTimeout = 0;
+  }
+  vTaskDelay(10);
  }
 }

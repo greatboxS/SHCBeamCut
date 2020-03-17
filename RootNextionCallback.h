@@ -300,9 +300,6 @@ void WaitingTimeOutCallback()
 		RootNextion.GotoPage(INFO_PAGE);
 	else
 		RootNextion.GotoPage(BKanban.CurrentWindowId);
-
-	// if (BKanban.CurrentWindowId == HIS_PAGE)
-	Nextion_UpdateHisPage();
 }
 
 void Nextion_UpdateTime()
