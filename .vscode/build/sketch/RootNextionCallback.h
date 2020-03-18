@@ -155,7 +155,7 @@ void ButGetSizeClickCallback()
 {
 	f_log();
 	//
-	if(BKanban.Cutting.IsCutting)
+	if (BKanban.Cutting.IsCutting)
 	{
 		RootNextion.showMessage("Please finish your cut first");
 		return;
@@ -182,6 +182,7 @@ void ButCuttingBackClickCallback()
 	else
 	{
 		RootNextion.GotoPage(INFO_PAGE);
+		BKanban.CurrentWindowId=INFO_PAGE;
 		Ethernet_GetScheduleInfo();
 	}
 }
@@ -304,10 +305,6 @@ void WaitingTimeOutCallback()
 
 void Nextion_UpdateTime()
 {
-	while (updateState)
-	{
-		yield();
-	}
 	for (int i = 0; i < 6; i++)
 	{
 		char temp[64]{0};

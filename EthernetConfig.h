@@ -33,6 +33,8 @@ private:
 	const char *KeepAlive = "Keep-Alive: timeout=5, max=999";
 	const char *ConnectionClose = "Connection: close";
 	const char *ConnectionAlive = "Connection: keep-alive";
+
+	char RootUrl[256];
 	//const char *CashControl = "Cache-Control: max-age=0";
 	//const char *UpgradeInsecure = "Upgrade-Insecure-Requests: 1";
 	//const char *UserAgent = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36";
@@ -53,6 +55,8 @@ private:
 	void making_url(const String &_ext, uint8_t _method = HTTP_GET);
 
 	void making_url(char *_ext, uint8_t _method);
+
+	void making_root_url(char *url, uint8_t _method = HTTP_GET);
 
 public:
 	char server[20] = "10.4.3.41";
@@ -95,7 +99,7 @@ public:
 			Serial.println(Ethernet.localIP()[i], HEX);
 		}
 
-		int exception = Ethernet.begin(mac, 20000);
+		int exception = Ethernet.begin(mac, 10000);
 
 		if (exception == 0)
 		{
@@ -117,7 +121,7 @@ public:
 		{
 			Serial.print("  DHCP assigned IP ");
 			Serial.println(Ethernet.localIP());
-			have_old_ip=true;
+			have_old_ip = true;
 			EEPROM_SAVE_ETHERNET_IP4();
 			lanConntected = true;
 			EthernetPlugIn = true;
@@ -138,11 +142,6 @@ public:
 
 	void DisconnectFromServer();
 
-	void SendData(char *data)
-	{
-		client.println(data);
-	}
-
 	bool PostData(char *url, char *data)
 	{
 		if (!client.connected())
@@ -156,28 +155,26 @@ public:
 			Serial.println("Connect: successed");
 		}
 
-		making_url(url, HTTP_POST);
+		making_root_url(url, HTTP_POST);
 		//
 		char temp[32]{0};
 		int length = strlen(data);
 		snprintf(temp, sizeof(temp), "Content-Length: %d", length);
 
-		client.println(Url);
+		client.println(RootUrl);
 		client.println(Host);
-		client.println(ConnectionAlive);
-		//client.println(CashControl);
-		//client.println(UpgradeInsecure);
-		//client.println(UserAgent);
+		client.println(ConnectionClose);
 		client.println("Content-Type: application/json");
 		client.println(temp);
 		client.println();
 		client.println(data);
 
-		Serial.println(Url);
-		Serial.println(Host);
-		Serial.println("Content-Type: application/json");
-		Serial.printf(temp);
-		Serial.println(data);
+		printf("%s\r\n", RootUrl);
+		printf("%s\r\n", Host);
+		printf("%s\r\n", ConnectionClose);
+		printf("Content-Type: application/json");
+		printf("%s\r\n", temp);
+		printf("%s\r\n", data);
 		return true;
 	}
 

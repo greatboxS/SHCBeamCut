@@ -45,7 +45,7 @@ void RootRTCTimer(TimerHandle_t pxTimer)
 	if (Flag.IsRequest)
 	{
 		Timeout++;
-		if (Timeout >= 5)
+		if (Timeout >= 3)
 		{
 			Flag.IsRequest = false;
 			Timeout = 0;
@@ -147,7 +147,7 @@ void setup()
 										   (1000),		   // The timer period in ticks.
 										   pdTRUE,		   // The timers will auto-reload themselves when they expire.
 										   NULL,		   // Assign each timer a unique id equal to its array index.
-										   RootRTCTimer	// Each timer calls the same callback when it expires.
+										   RootRTCTimer	   // Each timer calls the same callback when it expires.
 	);
 
 	TimerHandle_t requestTimer = xTimerCreate("RequestTimer", (5000), pdTRUE, NULL, RequestTimer);
@@ -194,7 +194,13 @@ void Main_Task(void *parameter)
 	bool submit_counter = false;
 	for (;;)
 	{
-		if (!get_last_cut_timeout && !get_lastcut_ok && RequestQueue.List.empty())
+		RFID_Runing();
+
+		RootEthernet.Run();
+
+		Ethernet_RequestQueue();
+
+		if (!get_last_cut_timeout && !get_lastcut_ok && RequestQueue.List.empty() && !DeviceSetting)
 		{
 			Ethernet_GetLastCut();
 			last_cut_timeout_tick = 0;
@@ -209,18 +215,10 @@ void Main_Task(void *parameter)
 		if (get_lastcut_ok && !submit_counter && !Flag.IsRequest)
 		{
 			Ethernet_SubmitCuttingTime();
-			submit_counter=true;
+			submit_counter = true;
 		}
 
-		RFID_Runing();
-
-		RootEthernet.Run();
-
-		RootNextion.Listening();
-
-		Ethernet_RequestQueue();
-
-		if (SubmitNow)
+		if (SubmitNow && !DeviceSetting)
 		{
 			Ethernet_SubmitCuttingTime();
 			SubmitNow = false;
@@ -283,6 +281,26 @@ void Main_Task(void *parameter)
 			log_ln(esp_get_free_heap_size());
 		}
 
+		delay(2);
+	}
+}
+
+void UpdateTimeTask(void *parameter)
+{
+	for (;;)
+	{
+		vTaskDelay(10);
+	}
+}
+
+void Nextion_Task(void *parameter)
+{
+	int tick = 0;
+	int old_cutTime_val = 0;
+	for (;;)
+	{
+		RootNextion.Listening();
+		
 		// New page event
 		if (BKanban.NewPageLoading)
 		{
@@ -331,23 +349,14 @@ void Main_Task(void *parameter)
 				break;
 			}
 		}
-		delay(2);
-	}
-}
 
-void UpdateTimeTask(void *parameter)
-{
-	int tick = 0;
-	int old_cutTime_val = 0;
-	for (;;)
-	{
-		if (millis() - tick > 1000)
+		if (millis() - tick > 1000 && !updateState)
 		{
 			tick = millis();
 			Nextion_UpdateTime();
 		}
 
-		if (old_cutTime_val != BKanban.Cutting.TotalCutTimes)
+		if (old_cutTime_val != BKanban.Cutting.TotalCutTimes && !updateState)
 		{
 			RootNextion.SetPage_numberValue(CUTTING_PAGE, RootNextion.CuttingPageHandle.TOTAL_TIME, BKanban.Cutting.TotalCutTimes);
 			if (BKanban.Cutting.IsCutting)
@@ -358,19 +367,6 @@ void UpdateTimeTask(void *parameter)
 			old_cutTime_val = BKanban.Cutting.TotalCutTimes;
 		}
 
-		vTaskDelay(10);
-	}
-}
-
-void Nextion_Task(void *parameter)
-{
-	for (;;)
-	{
-		if (EthernetInitialTimeout == 1)
-		{
-			RootEthernet.Renew();
-			EthernetInitialTimeout = 0;
-		}
 		vTaskDelay(10);
 	}
 }

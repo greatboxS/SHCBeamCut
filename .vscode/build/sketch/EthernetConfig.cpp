@@ -47,6 +47,26 @@ void RootEthernetClass::making_url(const String &_ext, uint8_t _method)
 	Url.replace("%s", _ext);
 }
 
+void RootEthernetClass::making_root_url(char *url, uint8_t _method)
+{
+	memset(RootUrl, 0, sizeof(RootUrl));
+	switch (_method)
+	{
+	case HTTP_GET:
+		snprintf(RootUrl, sizeof(RootUrl), "GET /%s HTTP/1.1", url);
+		break;
+	case HTTP_POST:
+		snprintf(RootUrl, sizeof(RootUrl), "POST /%s HTTP/1.1", url);
+		break;
+	case HTTP_PUT:
+		snprintf(RootUrl, sizeof(RootUrl), "PUT /%s HTTP/1.1", url);
+		break;
+	case HTTP_DELETE:
+		snprintf(RootUrl, sizeof(RootUrl), "DELETE /%s HTTP/1.1", url);
+		break;
+	}
+}
+
 void RootEthernetClass::making_url(char *_ext, uint8_t _method)
 {
 	Url.remove(0, Url.length());
@@ -76,9 +96,7 @@ void RootEthernetClass::making_url(char *_ext, uint8_t _method)
 bool RootEthernetClass::begin_connection(uint32_t timeout)
 {
 	client.connect(server, port);
-	char temp[64];
-	snprintf(temp, sizeof(temp), "Start connect to server : %s:%d", server, port);
-	Serial.println(temp);
+	printf("Start connect to server : %s:%d\r\n", server, port);
 	int count = timeout / 100;
 	int i = 0;
 	while (!client.connected() && i < count)
@@ -98,11 +116,11 @@ bool RootEthernetClass::begin_Request(const String &_url, uint8_t _method)
 	{
 		if (!begin_connection())
 		{
-			Serial.println("Connect: failed");
+			printf("Connect: failed\r\n");
 			return false;
 		}
 
-		Serial.println("Connect: successed");
+		printf("Connect: successed\r\n");
 	}
 
 	making_url(_url, _method);
@@ -111,13 +129,10 @@ bool RootEthernetClass::begin_Request(const String &_url, uint8_t _method)
 	client.println(Url);
 	client.println(Host);
 	client.println(ConnectionClose);
-	//client.println(CashControl);
-	//client.println(UpgradeInsecure);
-	//client.println(UserAgent);
 	client.println();
 
-	Serial.println(Url);
-	Serial.println(Host);
+	printf("%s\r\n", Url.c_str());
+	printf("%s\r\n", Host);
 
 	return true;
 }
@@ -130,11 +145,11 @@ bool RootEthernetClass::begin_Request(char *_url, uint8_t _method)
 	{
 		if (!begin_connection())
 		{
-			Serial.println("Connect: failed");
+			printf("Connect: failed\r\n");
 			return false;
 		}
 
-		Serial.println("Connect: successed");
+		printf("Connect: successed\r\n");
 	}
 
 	making_url(_url, _method);
@@ -143,31 +158,27 @@ bool RootEthernetClass::begin_Request(char *_url, uint8_t _method)
 	client.println(Url);
 	client.println(Host);
 	client.println(ConnectionClose);
-	//client.println(CashControl);
-	//client.println(UpgradeInsecure);
-	//client.println(UserAgent);
 	client.println();
 
-	Serial.println(Url);
-	Serial.println(Host);
+	printf("%s\r\n", Url.c_str());
+	printf("%s\r\n", Host);
 
 	return true;
 }
 
 void RootEthernetClass::SendRequest(char *url)
 {
-	making_url(url, HTTP_GET);
+	//making_url(url, HTTP_GET);
+	making_root_url(url, HTTP_GET);
 	//
-	client.println(Url);
+	client.println(RootUrl);
 	client.println(Host);
 	client.println(ConnectionClose);
-	//client.println(CashControl);
-	//client.println(UpgradeInsecure);
-	//client.println(UserAgent);
 	client.println();
 
-	Serial.println(Url);
-	Serial.println(Host);
+	printf("%s\r\n", RootUrl);
+	printf("%s\r\n", Host);
+	printf("%s\r\n", ConnectionClose);
 }
 
 void RootEthernetClass::SearchingPO(String _po)
@@ -185,7 +196,7 @@ uint8_t RootEthernetClass::Get_LANStatus()
 {
 	if (Ethernet.hardwareStatus() == EthernetNoHardware)
 	{
-		Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+		printf("Ethernet shield was not found.  Sorry, can't run without hardware. :(\r\n");
 		lanConntected = false;
 		serverConnected = false;
 		return 0;
@@ -195,7 +206,7 @@ uint8_t RootEthernetClass::Get_LANStatus()
 
 	if (Ethernet.linkStatus() == LinkOFF)
 	{
-		Serial.println("Ethernet cable is not connected.");
+		printf("Ethernet cable is not connected\r\n");
 		lanConntected = false;
 		serverConnected = false;
 		return 2;

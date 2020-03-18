@@ -337,16 +337,10 @@ inline void Ethernet_RequestQueue()
 	//f_log();
 	if (!RequestQueue.List.empty())
 	{
-		// if (EthernetStatus == false)
-		// {
-		// 	EthernetRenew = true;
-		// 	EthernetInitialTimeout = 0;
-		// 	int exp = RootEthernet.begin();
-		// 	RootNextion.GotoPage(BKanban.CurrentWindowId);
-		// 	if (exp == 0)
-		// 		return;
-		// 	EthernetStatus = true;
-		// }
+		if (RootEthernet.have_old_ip)
+			RootEthernet.reinitialize_ethernet_module();
+		else
+			RootEthernet.begin();
 
 		if (Flag.IsRequest)
 		{
@@ -372,6 +366,7 @@ inline void Ethernet_RequestQueue()
 		if (!RootEthernet.client.connected())
 		{
 			RequestQueue.List.front().retry++;
+
 			if (RequestQueue.List.front().retry >= 5)
 			{
 				RequestQueue.List.pop();
@@ -394,12 +389,13 @@ inline void Ethernet_RequestQueue()
 		RootEthernet.SendRequest(RequestQueue.List.front().url);
 
 		if (RequestQueue.List.front().ShowWaitingPage)
-			RootNextion.Waiting(10000, "Requesting to server...");
+			RootNextion.Waiting(3000, "Requesting to server...");
 
 		RequestQueue.List.pop();
 		EthernetInitialTimeout = 0;
 		Flag.IsRequest = true;
 		Flag.RespError = false;
+		Timeout=0;
 	}
 }
 #endif // !_EthernetRequest_h

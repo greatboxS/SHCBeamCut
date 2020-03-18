@@ -96,6 +96,7 @@ bool get_lastcut_ok = false;
 volatile int TouchTimes = 0;
 volatile bool settingMode = false;
 bool responsed_failed = false;
+bool DeviceSetting=false;
 
 void ExternalInterrupt();
 void DataReceiveCallBack(EthernetClient &stream);
@@ -318,16 +319,18 @@ void Ethernet_Init()
 {
 	RootNextion.Waiting(60000, "Initializing Ethernet module...");
 	RootEthernet.init(ETHERNET_SPI_CS_PIN, ETHERNET_RST_PIN, DataReceiveCallBack);
+	int retry = 2;
 
-	while (RootEthernet.begin() == 0)
+	while (RootEthernet.begin() == 0 && retry > 0)
 	{
 		delay(100);
 		RootNextion.Listening();
+		retry--;
 	}
 
-	RootNextion.Waiting(20000, "Connecting to server...");
+	RootNextion.Waiting(10000, "Connecting to server...");
 
-	RootEthernet.begin_connection(20000);
+	RootEthernet.begin_connection(10000);
 	RootNextion.GotoPage(HIS_PAGE);
 
 	Ethernet_GetTime();
@@ -548,7 +551,7 @@ void DataReceiveCallBack(EthernetClient &stream)
 				if (AddNewUser)
 				{
 					RootNextion.showMessage("Add new user success", 2000);
-					AddNewUser=false;
+					AddNewUser = false;
 				}
 				else
 					RootNextion.GotoPage(LOGIN_PAGE);
@@ -759,7 +762,10 @@ void PAGE_LOADING_EVENT_CALLBACK(uint8_t _pageId, uint8_t _componentId, uint8_t 
 			if (_componentId == RootNextion.HisPageHandle.BUT_CONTINUE_ID)
 				ButContinueClickCallback();
 			if (_componentId == RootNextion.HisPageHandle.BUT_GOT_MACHINE_ID)
+			{
 				ButSettingMachineClickCallback();
+				DeviceSetting=true;
+			}
 			if (_componentId == RootNextion.HisPageHandle.BUT_GO_SEARCH_ID)
 				ButGoSearchClickCallBack();
 			if (_componentId == RootNextion.HisPageHandle.BUT_GO_USER_ID)
@@ -772,7 +778,10 @@ void PAGE_LOADING_EVENT_CALLBACK(uint8_t _pageId, uint8_t _componentId, uint8_t 
 			if (_componentId >= RootNextion.SearchPageHandle.FIRST_SELECT_PO_BUT_ID && _componentId < RootNextion.SearchPageHandle.LAST_SELECT_PO_BUT_ID)
 				ButSelectScheduleCallback(_componentId);
 			if (_componentId == RootNextion.SearchPageHandle.GOT_BACK)
+			{
 				ButSearchGobackClickCallback();
+				DeviceSetting=false;
+			}
 
 			break;
 
@@ -828,7 +837,9 @@ void PAGE_LOADING_EVENT_CALLBACK(uint8_t _pageId, uint8_t _componentId, uint8_t 
 
 		case MESSAGE_PAGE:
 			if (_componentId == 100)
+			{
 				WaitingTimeOutCallback();
+			}
 			break;
 
 		case COMPONENT_PAGE:
